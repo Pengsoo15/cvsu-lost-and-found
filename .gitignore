@@ -1,0 +1,16 @@
+# Dependency and package files
+node_modules/
+package-lock.json
+
+# Firebase caches & configs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

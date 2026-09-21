@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /lostTickets/{ticketId} {
+      // Students can submit a lost item report if it includes a valid CvSU email
+      allow create: if request.resource.data.email.matches('.*@cvsu[.]edu[.]ph$')
+                    && request.resource.data.fullName is string
+                    && request.resource.data.item is string;
+
+      // Only authenticated CSSO/ELITS officers can view, update, or delete tickets
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
