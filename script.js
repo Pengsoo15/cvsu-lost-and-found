@@ -57,6 +57,15 @@ const dataSourceLabel = document.querySelector("#dataSourceLabel");
 const ticketsKey = "lost-found-tickets";
 const adminSessionKey = "lost-found-admin-session";
 
+// Initialize beautiful date picker
+flatpickr("input[name='lostDate']", {
+  enableTime: true,
+  dateFormat: "Y-m-d\\TH:i",
+  altInput: true,
+  altFormat: "F j, Y h:i K", // Display format e.g. September 22, 2026 12:00 AM
+  placeholder: "Select date and time...",
+});
+
 const previewFields = {
   fullName: document.querySelector("#previewName"),
   program: document.querySelector("#previewProgram"),
@@ -344,6 +353,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 form.addEventListener("input", updatePreview);
+form.addEventListener("change", updatePreview); // Added for Flatpickr compatibility
 form.elements.email.addEventListener("input", validateCvsuEmail);
 
 form.addEventListener("submit", async (event) => {
