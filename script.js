@@ -240,12 +240,22 @@ const isAdminUnlocked = () => Boolean(auth.currentUser || sessionStorage.getItem
 
 const getAdminName = () => auth.currentUser?.email || sessionStorage.getItem(adminSessionKey) || "Officer";
 
-const showPublicView = () => {
+const landingPanel = document.querySelector("#landingPanel");
+
+const showLandingView = () => {
+  if (landingPanel) landingPanel.hidden = false;
+  submitPanel.hidden = true;
+  adminPanel.hidden = true;
+};
+
+const showSubmitView = () => {
+  if (landingPanel) landingPanel.hidden = true;
   submitPanel.hidden = false;
   adminPanel.hidden = true;
 };
 
 const showAdminView = async () => {
+  if (landingPanel) landingPanel.hidden = true;
   submitPanel.hidden = true;
   adminPanel.hidden = false;
 
@@ -265,8 +275,13 @@ const routeView = async () => {
     await showAdminView();
     return;
   }
+  
+  if (window.location.hash === "#submit") {
+    showSubmitView();
+    return;
+  }
 
-  showPublicView();
+  showLandingView();
 };
 
 const renderTickets = async () => {

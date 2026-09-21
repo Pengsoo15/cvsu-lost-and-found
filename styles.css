@@ -755,3 +755,6 @@ select {
   background: var(--green) !important;
   border-color: var(--green) !important;
 }
+.hero-panel[hidden] {
+  display: none !important;
+}
