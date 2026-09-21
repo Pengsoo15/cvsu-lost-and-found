@@ -21,11 +21,60 @@ body {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.9), transparent 26rem),
-    radial-gradient(circle at 82% 18%, rgba(217, 155, 43, 0.36), transparent 24rem),
-    radial-gradient(circle at 54% 82%, rgba(20, 107, 72, 0.26), transparent 28rem),
-    linear-gradient(135deg, #edf7f0 0%, #f8fbf8 46%, #dceee5 100%);
+  background: #edf7f0;
+}
+
+/* Liquid Glass Background */
+.liquid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.8;
+  animation: liquidFloat 20s infinite alternate cubic-bezier(0.5, 0, 0.5, 1);
+}
+
+.blob-1 {
+  top: -10%; left: -10%;
+  width: 50vw; height: 50vw;
+  background: rgba(20, 107, 72, 0.65); /* Deep Green */
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  top: 40%; right: -20%;
+  width: 60vw; height: 60vw;
+  background: rgba(217, 155, 43, 0.55); /* Gold */
+  animation-delay: -5s;
+}
+
+.blob-3 {
+  bottom: -20%; left: 20%;
+  width: 55vw; height: 55vw;
+  background: rgba(14, 219, 140, 0.45); /* Teal/Emerald */
+  animation-delay: -10s;
+}
+
+.blob-4 {
+  top: 10%; left: 30%;
+  width: 45vw; height: 45vw;
+  background: rgba(255, 255, 255, 0.9); /* White highlight */
+  animation-delay: -15s;
+  filter: blur(50px);
+}
+
+@keyframes liquidFloat {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(5vw, -5vh) scale(1.1) rotate(5deg); }
+  66% { transform: translate(-5vw, 5vh) scale(0.9) rotate(-5deg); }
+  100% { transform: translate(2vw, 2vh) scale(1.05) rotate(2deg); }
 }
 
 body::before {
@@ -48,11 +97,13 @@ body::before {
 
 .hero-panel,
 .glass-card {
-  border: 1px solid var(--line);
-  background: var(--glass);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(28px) saturate(145%);
-  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 100%);
+  box-shadow: 
+    0 30px 60px rgba(14, 42, 30, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+  backdrop-filter: blur(45px) saturate(200%);
+  -webkit-backdrop-filter: blur(45px) saturate(200%);
 }
 
 .hero-panel {
@@ -358,12 +409,14 @@ button:hover {
   max-width: 100%;
   margin: 22px auto 0;
   padding: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.48);
-  box-shadow: 0 18px 42px rgba(14, 42, 30, 0.12);
-  backdrop-filter: blur(24px) saturate(145%);
-  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.15) 100%);
+  box-shadow: 
+    0 20px 40px rgba(14, 42, 30, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
 }
 
 .tab-button,
@@ -690,9 +743,12 @@ select {
 }
 /* Flatpickr Theme Overrides */
 .flatpickr-calendar {
-  border-radius: 16px !important;
-  box-shadow: 0 18px 42px rgba(14, 42, 30, 0.12) !important;
-  border: 1px solid rgba(20, 107, 72, 0.18) !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  box-shadow: 0 24px 50px rgba(14, 42, 30, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
   font-family: 'Inter', sans-serif !important;
 }
 .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
