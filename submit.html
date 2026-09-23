@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CvSU Lost and Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="liquid-bg" aria-hidden="true">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+      <div class="blob blob-4"></div>
+    </div>
+    <main class="page-shell">
+      <section class="hero-panel" id="landingPanel" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">CSSO & ELITS</p>
+          <h1 id="page-title">Lost and Found Ticket Desk</h1>
+          <p class="intro">
+            Submit a detailed report so both organizations can match your
+            item with turned-in belongings faster.
+          </p>
+          <a href="#submit" class="primary-button" style="display: inline-block; margin-top: 24px; text-decoration: none; text-align: center; line-height: 56px; padding: 0 32px; min-height: 56px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, var(--green), var(--green-dark)); font-weight: 800; box-shadow: 0 18px 34px rgba(20, 107, 72, 0.28); transition: transform 160ms ease, box-shadow 160ms ease;">Report Lost Item</a>
+        </div>
+
+        <div class="hero-stack">
+          <div class="item-visual" aria-hidden="true">
+            <span class="device"></span>
+            <span class="id-card"></span>
+            <span class="tag"></span>
+          </div>
+
+          <div class="status-strip" aria-label="Ticket process">
+            <div>
+              <span>01</span>
+              <strong>Submit ticket</strong>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>Office review</strong>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Claim update</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="submitPanel" hidden>
+        <div class="content-grid">
+          <form class="glass-card ticket-form" id="lostItemForm">
+            <div class="section-heading">
+              <p class="eyebrow">Student details</p>
+              <h2>Submit a Lost Item Ticket</h2>
+            </div>
+
+            <div class="field-grid">
+              <label>
+                <span>Full name</span>
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Juan Dela Cruz"
+                  autocomplete="name"
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Year and program</span>
+                <input
+                  type="text"
+                  name="program"
+                  placeholder="2nd Year BSCS"
+                  required
+                />
+              </label>
+            </div>
+
+            <label>
+              <span>CvSU email</span>
+              <input
+                type="email"
+                name="email"
+                placeholder="student@cvsu.edu.ph"
+                autocomplete="email"
+                pattern="^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$"
+                title="Please use your official CvSU email ending in @cvsu.edu.ph"
+                required
+              />
+            </label>
+
+            <div class="field-grid">
+              <label>
+                <span>Where did you lose it around DIT?</span>
+                <input
+                  type="text"
+                  name="location"
+                  placeholder="1st floor, Near Elevator, CCL401, etc..."
+                  required
+                />
+              </label>
+
+              <label>
+                <span>When did you lose it?</span>
+                <input type="datetime-local" name="lostDate" required />
+              </label>
+            </div>
+
+            <label>
+              <span>What did you lose?</span>
+              <textarea
+                name="item"
+                rows="5"
+                placeholder="Example: Black tumbler with sticker, blue umbrella, student ID..."
+                required
+              ></textarea>
+            </label>
+
+            <button type="submit">Submit ticket</button>
+            <p class="form-note">
+              Please use your CvSU email so the office can contact you for updates.
+            </p>
+          </form>
+
+          <aside class="glass-card preview-card" aria-live="polite">
+            <div class="section-heading">
+              <p class="eyebrow">Ticket preview</p>
+              <h2 id="ticketId">Not submitted yet</h2>
+            </div>
+
+            <dl class="ticket-summary">
+              <div>
+                <dt>Student</dt>
+                <dd id="previewName">Waiting for details</dd>
+              </div>
+              <div>
+                <dt>Program</dt>
+                <dd id="previewProgram">-</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd id="previewEmail">-</dd>
+              </div>
+              <div>
+                <dt>Lost at</dt>
+                <dd id="previewLocation">-</dd>
+              </div>
+              <div>
+                <dt>Date and time</dt>
+                <dd id="previewDate">-</dd>
+              </div>
+              <div>
+                <dt>Item</dt>
+                <dd id="previewItem">-</dd>
+              </div>
+            </dl>
+
+            <div class="success-panel" id="successPanel" hidden>
+              <strong>Ticket submitted</strong>
+              <p>
+                Your report has been recorded on this page. Save your ticket
+                number for follow-up.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="tab-panel hidden-admin-panel" id="adminPanel" hidden>
+        <form class="glass-card admin-card admin-login" id="adminLoginForm">
+          <div class="section-heading">
+            <p class="eyebrow">Authorized access</p>
+            <h2>Admin Ticket Viewing</h2>
+            <p class="admin-subtitle">
+              This hidden screen is for CSSO/ELITS officers only.
+            </p>
+          </div>
+
+          <div class="field-grid">
+            <label>
+              <span>Officer email</span>
+              <input
+                type="email"
+                name="adminEmail"
+                placeholder="officer@cvsu.edu.ph"
+                autocomplete="username email"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                name="adminPassword"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+          </div>
+
+          <button type="submit" id="adminLoginBtn">Log in to dashboard</button>
+          <p class="form-note" id="adminLoginMessage"></p>
+        </form>
+
+        <div class="glass-card admin-card" id="adminDashboard" hidden>
+          <div class="admin-header">
+            <div class="section-heading">
+              <p class="eyebrow">Admin dashboard</p>
+              <h2>Submitted Tickets</h2>
+              <p class="admin-subtitle" id="dataSourceLabel">
+                Live data: Firebase
+              </p>
+            </div>
+            <div class="admin-header-actions">
+              <button class="secondary-button" type="button" id="exportTickets">
+                Export CSV
+              </button>
+              <button class="secondary-button" type="button" id="logoutAdmin">
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-summary">
+            <div>
+              <span id="totalTickets">0</span>
+              <strong>Total tickets</strong>
+            </div>
+            <div>
+              <span id="openTickets">0</span>
+              <strong>Open</strong>
+            </div>
+            <div>
+              <span id="resolvedTickets">0</span>
+              <strong>Solved</strong>
+            </div>
+          </div>
+
+          <div class="empty-state" id="emptyTickets">
+            No submitted tickets yet.
+          </div>
+
+          <div class="ticket-list" id="ticketList"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

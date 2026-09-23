@@ -18,17 +18,16 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAHuTDSZxcZ3J8xVKgXMVkpETs3H02dGeA",
+  apiKey: "AIzaSyDX3p3KbhDw6M5mSkkCHPPpTWOP1l0hpSM",
   authDomain: "cvsu-lost-and-found-48294.firebaseapp.com",
   projectId: "cvsu-lost-and-found-48294",
   storageBucket: "cvsu-lost-and-found-48294.firebasestorage.app",
   messagingSenderId: "323262353430",
-  appId: "1:323262353430:web:d882841cc52a5d97db6537",
-  measurementId: "G-BF1H11LKEM",
+  appId: "1:323262353430:web:587e1d2ec49eb84adb6537",
+  measurementId: "G-1CHF45VXTE"
 };
-
 // Initialize Firebase services
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
