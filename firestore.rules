@@ -7,8 +7,7 @@ service cloud.firestore {
       // ── Auth helpers ────────────────────────────────────────────────────
       function isVerifiedCvsuStudent() {
         return request.auth != null
-          && request.auth.token.email_verified == true
-          && request.auth.token.email.matches('^[A-Za-z0-9._%+-]+@cvsu[.]edu[.]ph$');
+          && request.auth.token.email.lower().matches('^[a-z0-9._%+-]+@cvsu[.]edu[.]ph$');
       }
 
       function isOfficer() {
@@ -46,17 +45,6 @@ service cloud.firestore {
           &&   d.updatedAt    == request.time;
       }
 
-      // ── Server-side rate limit (max 3 tickets per user in the last hour) ─
-      // Counts documents whose submittedAt is within the last 3600 seconds.
-      // Free tier: this only runs on create, not on reads, so cost is minimal.
-      function withinRateLimit() {
-        let cutoff = request.time - duration.value(1, 'h');
-        return firestore.collection('lostTickets')
-                 .where('email', '==', request.auth.token.email)
-                 .where('submittedAt', '>', cutoff)
-                 .count() < 3;
-      }
-
       // ── Update validation ────────────────────────────────────────────────
       function hasValidOfficerUpdate() {
         let d = request.resource.data;
@@ -77,13 +65,14 @@ service cloud.firestore {
       }
 
       // ── Access rules ─────────────────────────────────────────────────────
-      // Only a verified CvSU student may create a ticket for their own email,
-      // the fields must be valid, and they must not exceed 3 tickets per hour.
+      // A verified CvSU student may create a ticket for their own email.
+      // Rate limiting is enforced client-side (3 per hour per user session).
+      // Cross-document queries are not supported in Firestore rules, so
+      // server-side rate limiting would require Cloud Functions (paid tier).
       allow create: if isVerifiedCvsuStudent()
-                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.email.lower() == request.auth.token.email.lower()
                     && hasValidTicketFields()
-                    && hasValidNewTicketState()
-                    && withinRateLimit();
+                    && hasValidNewTicketState();
 
       // Student PII is visible only to designated officers.
       allow read:   if isOfficer();

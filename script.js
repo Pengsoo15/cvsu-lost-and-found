@@ -38,11 +38,11 @@ const ticketsCollection = collection(db, "lostTickets");
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const CVSU_EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/i;
-const RATE_LIMIT_MAX = 3;          // max submissions
+const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const adminSessionKey = "lost-found-admin-session";
 
-// ─── Client-side rate limiter (keyed by uid) ────────────────────────────────
+// ─── Client-side rate limiter ───────────────────────────────────────────────
 const rateLimiter = {
   _key(uid) { return `rl_${uid}`; },
   check(uid) {
@@ -67,46 +67,56 @@ let currentStudentEmail = "";
 let currentStudentIsVerified = false;
 let currentUserIsOfficer = false;
 
+// ─── Admin search / filter state ────────────────────────────────────────────
+let adminSearchQuery = "";
+let adminStatusFilter = "all";
+let allTicketsCache = [];
+
 // ─── DOM refs ───────────────────────────────────────────────────────────────
-const form             = document.querySelector("#lostItemForm");
-const submitBtn        = document.querySelector("#submitBtn");
-const adminPanel       = document.querySelector("#adminPanel");
-const adminLoginForm   = document.querySelector("#adminLoginForm");
-const adminLoginMessage= document.querySelector("#adminLoginMessage");
-const adminDashboard   = document.querySelector("#adminDashboard");
-const ticketList       = document.querySelector("#ticketList");
-const emptyTickets     = document.querySelector("#emptyTickets");
-const totalTickets     = document.querySelector("#totalTickets");
-const openTickets      = document.querySelector("#openTickets");
-const resolvedTickets  = document.querySelector("#resolvedTickets");
-const exportTickets    = document.querySelector("#exportTickets");
-const logoutAdmin      = document.querySelector("#logoutAdmin");
-const dataSourceLabel  = document.querySelector("#dataSourceLabel");
-const studentSignIn    = document.querySelector("#studentSignIn");
-const studentSignOut   = document.querySelector("#studentSignOut");
+const form = document.querySelector("#lostItemForm");
+const submitBtn = document.querySelector("#submitBtn");
+const adminPanel = document.querySelector("#adminPanel");
+const adminLoginForm = document.querySelector("#adminLoginForm");
+const adminLoginMessage = document.querySelector("#adminLoginMessage");
+const adminDashboard = document.querySelector("#adminDashboard");
+const ticketList = document.querySelector("#ticketList");
+const emptyTickets = document.querySelector("#emptyTickets");
+const totalTickets = document.querySelector("#totalTickets");
+const openTickets = document.querySelector("#openTickets");
+const resolvedTickets = document.querySelector("#resolvedTickets");
+const exportTickets = document.querySelector("#exportTickets");
+const logoutAdmin = document.querySelector("#logoutAdmin");
+const dataSourceLabel = document.querySelector("#dataSourceLabel");
+const studentSignIn = document.querySelector("#studentSignIn");
+const studentSignOut = document.querySelector("#studentSignOut");
 const studentAuthMessage = document.querySelector("#studentAuthMessage");
-const submitPanel      = document.querySelector("#submitPanel");
-const landingPanel     = document.querySelector("#landingPanel");
+const submitPanel = document.querySelector("#submitPanel");
+const landingPanel = document.querySelector("#landingPanel");
+const searchInput = document.querySelector("#adminSearchInput");
+const statusFilter = document.querySelector("#adminStatusFilter");
 
 // Modal
-const successModal     = document.querySelector("#successModal");
-const modalTicketNumber= document.querySelector("#modalTicketNumber");
-const modalSummary     = document.querySelector("#modalSummary");
-const modalCloseBtn    = document.querySelector("#modalCloseBtn");
+const successModal = document.querySelector("#successModal");
+const modalTicketNumber = document.querySelector("#modalTicketNumber");
+const modalSummary = document.querySelector("#modalSummary");
+const modalCloseBtn = document.querySelector("#modalCloseBtn");
 
-// ─── Flatpickr ──────────────────────────────────────────────────────────────
+// ─── Flatpickr (larger, with visible month name) ────────────────────────────
 flatpickr("#lostDateInput", {
   enableTime: true,
   dateFormat: "Y-m-d\\TH:i",
   altInput: true,
-  altFormat: "F j, Y h:i K",
-  disableMobile: false,
-  theme: "light",
+  altFormat: "F j, Y — h:i K",
+  disableMobile: true, // Force the custom picker on mobile too
+  time_24hr: false,
+  minuteIncrement: 15,
+  maxDate: "today",
+  animate: true,
 });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatDate = (value) => {
-  if (!value) return "-";
+  if (!value) return "—";
   let date;
   if (typeof value?.toDate === "function") {
     date = value.toDate();
@@ -115,7 +125,7 @@ const formatDate = (value) => {
   } else {
     date = new Date(value);
   }
-  if (Number.isNaN(date.getTime())) return "-";
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -137,6 +147,11 @@ const makeTicketNumber = () => {
 };
 
 const isVerifiedCvsuEmail = (email) => CVSU_EMAIL_PATTERN.test(email);
+
+const statusColor = (status) => {
+  const map = { Open: "#e67e22", Reviewing: "#3498db", Matched: "#9b59b6", Solved: "#27ae60" };
+  return map[status] || "var(--muted)";
+};
 
 // ─── Auth UI sync ───────────────────────────────────────────────────────────
 const syncStudentAuthUi = () => {
@@ -267,7 +282,7 @@ const showSuccessModal = (ticket) => {
   ]
     .map(
       ([label, value]) =>
-        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "-")}</dd></div>`
+        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "—")}</dd></div>`
     )
     .join("");
 
@@ -289,65 +304,106 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !successModal.hidden) hideSuccessModal();
 });
 
-// ─── Render tickets ─────────────────────────────────────────────────────────
-const renderTickets = async () => {
-  let tickets = [];
-  try {
-    tickets = await ticketStore.list();
-  } catch (error) {
-    console.error("Failed to render tickets:", error);
-    ticketList.innerHTML = `<p class="form-note" style="color:#b91c1c;">Unable to load tickets: ${escapeHtml(error.message)}. Please ensure you are logged in as an authorized admin officer.</p>`;
-    return;
+// ─── Render tickets (with search + filter) ──────────────────────────────────
+const filterTickets = (tickets) => {
+  let result = tickets;
+
+  // Status filter
+  if (adminStatusFilter !== "all") {
+    result = result.filter((t) => t.status === adminStatusFilter);
   }
 
-  const openCount = tickets.filter((t) => t.status !== "Solved").length;
-  const resolvedCount = tickets.filter((t) => t.status === "Solved").length;
-  totalTickets.textContent = tickets.length;
-  openTickets.textContent = openCount;
-  resolvedTickets.textContent = resolvedCount;
-  emptyTickets.hidden = tickets.length > 0;
-  dataSourceLabel.textContent = "Live data: Firebase Firestore";
+  // Search
+  if (adminSearchQuery) {
+    const q = adminSearchQuery.toLowerCase();
+    result = result.filter((t) =>
+      t.ticketNumber.toLowerCase().includes(q) ||
+      t.fullName.toLowerCase().includes(q) ||
+      t.email.toLowerCase().includes(q) ||
+      t.item.toLowerCase().includes(q) ||
+      t.location.toLowerCase().includes(q) ||
+      t.program.toLowerCase().includes(q)
+    );
+  }
 
-  ticketList.innerHTML = tickets
+  return result;
+};
+
+const renderTicketCards = (tickets) => {
+  const filtered = filterTickets(tickets);
+
+  emptyTickets.hidden = filtered.length > 0;
+  if (!filtered.length && tickets.length > 0) {
+    emptyTickets.textContent = "No tickets match your search or filter.";
+  } else if (!tickets.length) {
+    emptyTickets.textContent = "No submitted tickets yet.";
+  }
+
+  ticketList.innerHTML = filtered
     .map((ticket) => {
       const itemKey = escapeHtml(ticket.id || ticket.ticketNumber);
+      const sColor = statusColor(ticket.status);
       return `
         <article class="admin-ticket" data-card-id="${itemKey}">
-          <div>
-            <h3>${escapeHtml(ticket.ticketNumber)} – ${escapeHtml(ticket.item)}</h3>
-            <p><strong>${escapeHtml(ticket.fullName)}</strong> – ${escapeHtml(ticket.program)}</p>
-            <p>${escapeHtml(ticket.email)}</p>
-            <p>Lost at ${escapeHtml(ticket.location)} on ${formatDate(ticket.lostDate)}</p>
-            <div class="admin-ticket-meta">
-              <span>${escapeHtml(ticket.status)}</span>
-              <span>Submitted ${formatDate(ticket.submittedAt)}</span>
-              ${
-                ticket.solvedAt
-                  ? `<span>Solved by ${escapeHtml(ticket.solvedBy)} on ${formatDate(ticket.solvedAt)}</span>`
-                  : ""
-              }
+          <div class="ticket-info">
+            <div class="ticket-header-row">
+              <span class="ticket-status-badge" style="background:${sColor}">${escapeHtml(ticket.status)}</span>
+              <span class="ticket-id-label">${escapeHtml(ticket.ticketNumber)}</span>
+            </div>
+            <h3 class="ticket-item-title">${escapeHtml(ticket.item)}</h3>
+            <div class="ticket-details-grid">
+              <div>
+                <span class="detail-label">Student</span>
+                <span class="detail-value">${escapeHtml(ticket.fullName)} · ${escapeHtml(ticket.program)}</span>
+              </div>
+              <div>
+                <span class="detail-label">Email</span>
+                <span class="detail-value">${escapeHtml(ticket.email)}</span>
+              </div>
+              <div>
+                <span class="detail-label">Location</span>
+                <span class="detail-value">${escapeHtml(ticket.location)}</span>
+              </div>
+              <div>
+                <span class="detail-label">Lost on</span>
+                <span class="detail-value">${formatDate(ticket.lostDate)}</span>
+              </div>
+              <div>
+                <span class="detail-label">Submitted</span>
+                <span class="detail-value">${formatDate(ticket.submittedAt)}</span>
+              </div>
+              ${ticket.solvedAt ? `
+              <div>
+                <span class="detail-label">Solved by</span>
+                <span class="detail-value">${escapeHtml(ticket.solvedBy)} · ${formatDate(ticket.solvedAt)}</span>
+              </div>` : ""}
             </div>
           </div>
-          <div class="ticket-actions">
-            <select data-ticket-status="${itemKey}" aria-label="Ticket status for ${escapeHtml(ticket.ticketNumber)}">
-              <option ${ticket.status === "Open" ? "selected" : ""}>Open</option>
-              <option ${ticket.status === "Reviewing" ? "selected" : ""}>Reviewing</option>
-              <option ${ticket.status === "Matched" ? "selected" : ""}>Matched</option>
-              <option ${ticket.status === "Solved" ? "selected" : ""}>Solved</option>
-            </select>
-            <input
-              type="text"
-              data-ticket-solved-by="${itemKey}"
-              value="${escapeHtml(ticket.solvedBy)}"
-              placeholder="Solved by"
-              aria-label="Solved by for ${escapeHtml(ticket.ticketNumber)}"
-            />
-            <button class="secondary-button" type="button" data-ticket-save="${itemKey}">
-              Save status
+          <div class="ticket-controls">
+            <div class="control-group">
+              <label class="control-label">Update status</label>
+              <select data-ticket-status="${itemKey}">
+                <option ${ticket.status === "Open" ? "selected" : ""}>Open</option>
+                <option ${ticket.status === "Reviewing" ? "selected" : ""}>Reviewing</option>
+                <option ${ticket.status === "Matched" ? "selected" : ""}>Matched</option>
+                <option ${ticket.status === "Solved" ? "selected" : ""}>Solved</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Solved by</label>
+              <input
+                type="text"
+                data-ticket-solved-by="${itemKey}"
+                value="${escapeHtml(ticket.solvedBy)}"
+                placeholder="Officer name"
+              />
+            </div>
+            <button class="action-btn save-btn" type="button" data-ticket-save="${itemKey}">
+              ✓ Save
             </button>
-            <a class="secondary-link" href="${makeMailLink(ticket)}">Email student</a>
-            <button class="secondary-button" type="button" data-ticket-delete="${itemKey}">
-              Delete
+            <a class="action-btn email-btn" href="${makeMailLink(ticket)}">✉ Email</a>
+            <button class="action-btn delete-btn" type="button" data-ticket-delete="${itemKey}">
+              ✕ Delete
             </button>
           </div>
         </article>
@@ -355,6 +411,39 @@ const renderTickets = async () => {
     })
     .join("");
 };
+
+const renderTickets = async () => {
+  try {
+    allTicketsCache = await ticketStore.list();
+  } catch (error) {
+    console.error("Failed to render tickets:", error);
+    ticketList.innerHTML = `<p class="form-note" style="color:#b91c1c;">Unable to load tickets: ${escapeHtml(error.message)}.</p>`;
+    return;
+  }
+
+  const openCount = allTicketsCache.filter((t) => t.status !== "Solved").length;
+  const resolvedCount = allTicketsCache.filter((t) => t.status === "Solved").length;
+  totalTickets.textContent = allTicketsCache.length;
+  openTickets.textContent = openCount;
+  resolvedTickets.textContent = resolvedCount;
+  dataSourceLabel.textContent = "Live data · Firebase Firestore";
+
+  renderTicketCards(allTicketsCache);
+};
+
+// Search and filter listeners
+if (searchInput) {
+  searchInput.addEventListener("input", () => {
+    adminSearchQuery = searchInput.value.trim();
+    renderTicketCards(allTicketsCache);
+  });
+}
+if (statusFilter) {
+  statusFilter.addEventListener("change", () => {
+    adminStatusFilter = statusFilter.value;
+    renderTicketCards(allTicketsCache);
+  });
+}
 
 // ─── Auth context sync ──────────────────────────────────────────────────────
 const syncAuthContext = async (user) => {
@@ -387,7 +476,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ─── Student Google sign-in (only @cvsu.edu.ph) ──────────────────────────────
+// ─── Student Google sign-in (only @cvsu.edu.ph) ─────────────────────────────
 studentSignIn.addEventListener("click", async () => {
   studentSignIn.disabled = true;
   studentAuthMessage.textContent = "Opening CvSU Google sign-in…";
@@ -395,13 +484,11 @@ studentSignIn.addEventListener("click", async () => {
 
   try {
     const provider = new GoogleAuthProvider();
-    // Restrict hd (hosted domain) to cvsu.edu.ph
     provider.setCustomParameters({ hd: "cvsu.edu.ph" });
 
     const result = await signInWithPopup(auth, provider);
     const email = result.user.email || "";
 
-    // Extra guard: reject non-CvSU accounts even if hd hint was bypassed
     if (!isVerifiedCvsuEmail(email)) {
       await signOut(auth);
       studentAuthMessage.textContent =
@@ -429,7 +516,7 @@ studentSignOut.addEventListener("click", async () => {
   await signOut(auth);
 });
 
-// ─── Form submit ─────────────────────────────────────────────────────────────
+// ─── Form submit (single handler) ───────────────────────────────────────────
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -452,25 +539,28 @@ form.addEventListener("submit", async (event) => {
   submitBtn.textContent = "Submitting ticket…";
 
   try {
-    const data = new FormData(form);
     const ticketNumber = makeTicketNumber();
     const ticket = {
       ticketNumber,
-      fullName: String(data.get("fullName") || "").trim(),
-      program:  String(data.get("program")  || "").trim(),
-      email:    String(data.get("email")    || "").trim(),
-      location: String(data.get("location") || "").trim(),
-      lostDate: data.get("lostDate"),
-      item:     String(data.get("item")     || "").trim(),
-      status:   "Open",
+      fullName: (form.elements.fullName?.value || "").trim(),
+      program: (form.elements.program?.value || "").trim(),
+      email: currentStudentEmail,
+      location: (form.elements.location?.value || "").trim(),
+      lostDate: form.elements.lostDate?.value || "",
+      item: (form.elements.item?.value || "").trim(),
+      status: "Open",
       solvedBy: "",
       solvedAt: "",
     };
 
     await ticketStore.create(ticket);
+
+    // Reset form
     form.reset();
-    // Re-populate read-only email after reset
-    form.elements.email.value = currentStudentEmail;
+    const fpInstance = document.querySelector("#lostDateInput")?._flatpickr;
+    if (fpInstance) fpInstance.clear();
+    if (form.elements.email) form.elements.email.value = currentStudentEmail;
+
     showSuccessModal(ticket);
   } catch (err) {
     console.error("Submission failed:", err);
@@ -541,9 +631,9 @@ if (logoutAdmin) {
 ticketList.addEventListener("click", async (event) => {
   const ticketIdToSave = event.target.dataset.ticketSave;
   if (ticketIdToSave) {
-    const statusInput   = ticketList.querySelector(`[data-ticket-status="${CSS.escape(ticketIdToSave)}"]`);
+    const statusInput = ticketList.querySelector(`[data-ticket-status="${CSS.escape(ticketIdToSave)}"]`);
     const solvedByInput = ticketList.querySelector(`[data-ticket-solved-by="${CSS.escape(ticketIdToSave)}"]`);
-    const status   = statusInput.value;
+    const status = statusInput.value;
     const solvedBy = status === "Solved"
       ? solvedByInput.value.trim() || getAdminName()
       : solvedByInput.value.trim();
@@ -559,7 +649,7 @@ ticketList.addEventListener("click", async (event) => {
     } catch (err) {
       alert("Failed to update ticket: " + err.message);
       event.target.disabled = false;
-      event.target.textContent = "Save status";
+      event.target.textContent = "✓ Save";
     }
     return;
   }
@@ -576,7 +666,7 @@ ticketList.addEventListener("click", async (event) => {
   } catch (err) {
     alert("Failed to delete ticket: " + err.message);
     event.target.disabled = false;
-    event.target.textContent = "Delete";
+    event.target.textContent = "✕ Delete";
   }
 });
 
@@ -607,7 +697,7 @@ exportTickets.addEventListener("click", async () => {
   };
   const csv = [headers, ...rows].map((row) => row.map(safeCsvCell).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
-  const url  = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = "lost-and-found-tickets.csv";
@@ -616,7 +706,6 @@ exportTickets.addEventListener("click", async () => {
 });
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
-// Back buttons
 document.querySelector("#backFromSubmit").addEventListener("click", (e) => {
   e.preventDefault();
   history.pushState(null, "", "#");
