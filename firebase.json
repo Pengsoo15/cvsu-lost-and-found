@@ -28,8 +28,8 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "FIREBASE_SETUP.md",
-      "SHIP_GUIDE.md"
+      "README.md",
+      "firestore.rules"
     ]
   },
   "firestore": {
