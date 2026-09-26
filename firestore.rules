@@ -7,7 +7,7 @@ service cloud.firestore {
       // ── Auth helpers ────────────────────────────────────────────────────
       function isVerifiedCvsuStudent() {
         return request.auth != null
-          && request.auth.token.email.lower().matches('^[a-z0-9._%+-]+@cvsu[.]edu[.]ph$');
+          && request.auth.token.email.matches('(?i)^[a-z0-9._%+-]+@cvsu[.]edu[.]ph$');
       }
 
       function isOfficer() {
@@ -70,7 +70,7 @@ service cloud.firestore {
       // Cross-document queries are not supported in Firestore rules, so
       // server-side rate limiting would require Cloud Functions (paid tier).
       allow create: if isVerifiedCvsuStudent()
-                    && request.resource.data.email.lower() == request.auth.token.email.lower()
+                    && request.resource.data.email == request.auth.token.email
                     && hasValidTicketFields()
                     && hasValidNewTicketState();
 

@@ -546,7 +546,7 @@ form.addEventListener("submit", async (event) => {
       program: (form.elements.program?.value || "").trim(),
       email: currentStudentEmail,
       location: (form.elements.location?.value || "").trim(),
-      lostDate: form.elements.lostDate?.value || "",
+      lostDate: (document.querySelector("#lostDateInput")?.value || form.elements.lostDate?.value || "").trim(),
       item: (form.elements.item?.value || "").trim(),
       status: "Open",
       solvedBy: "",
