@@ -65,11 +65,18 @@
           <p class="eyebrow">Computer Science Student Organization</p>
           <h1 id="page-title">Lost and Found Ticket Submission</h1>
           <p class="intro">
-            Submit a detailed report and description of your item.
+            Submit a detailed report.
           </p>
           <div class="landing-cta-row">
-            <a href="#submit" class="primary-button cta-btn" id="goToSubmit">Report Lost Item</a>
-            <a href="#admin" class="secondary-link cta-btn" id="goToAdmin">Officer Login</a>
+            <div class="cta-pill-track" id="ctaPillTrack" data-active="submit" role="tablist" aria-label="Action selector">
+              <div class="cta-sliding-glider" id="ctaSlidingGlider" aria-hidden="true"></div>
+              <a href="#submit" class="cta-pill-btn active" id="goToSubmit" role="tab" aria-selected="true">
+                <span class="cta-btn-text">Report Lost Item</span>
+              </a>
+              <a href="#admin" class="cta-pill-btn" id="goToAdmin" role="tab" aria-selected="false">
+                <span class="cta-btn-text">Officer Login</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -112,11 +119,11 @@
 
             <div class="auth-row" id="authRow">
               <div class="form-note" id="studentAuthMessage" aria-live="polite">
-                Sign in with your verified CvSU Google account before submitting a ticket.
+                Sign in with your CvSU Google account before submitting a ticket.
               </div>
               <div class="auth-buttons">
                 <button class="secondary-button" type="button" id="studentSignIn">
-                  Sign in with CvSU Google
+                  Sign in with Google
                 </button>
                 <button class="secondary-button" type="button" id="studentSignOut" hidden>
                   Sign out

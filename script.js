@@ -179,9 +179,9 @@ const makeMailLink = (ticket) => {
     `This is an update about your lost item report: ${ticket.item}.`,
     `Ticket number: ${ticket.ticketNumber}`,
     "",
-    "Please reply to this email if you need to add more details.",
+    "Your lose item is ready for claiming, please tell us when will you come to the office to claim your item",
     "",
-    "CSSO & ELITS Lost and Found",
+    "CSSO Lost and Found",
   ].join("\n");
   return `mailto:${encodeURIComponent(ticket.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
@@ -239,6 +239,9 @@ const showLandingView = () => {
   landingPanel.hidden = false;
   submitPanel.hidden = true;
   adminPanel.hidden = true;
+  if (typeof syncCtaSlider === "function") {
+    syncCtaSlider("submit");
+  }
 };
 
 const showSubmitView = () => {
@@ -779,6 +782,87 @@ exportTickets.addEventListener("click", async () => {
   link.click();
   URL.revokeObjectURL(url);
 });
+
+// ─── CTA Segmented Pill Slider Interaction ──────────────────────────────────
+const ctaTrack = document.querySelector("#ctaPillTrack");
+const submitCtaBtn = document.querySelector("#goToSubmit");
+const adminCtaBtn = document.querySelector("#goToAdmin");
+
+const syncCtaSlider = (targetMode) => {
+  if (!ctaTrack || !submitCtaBtn || !adminCtaBtn) return;
+  const isSubmit = targetMode === "submit";
+  ctaTrack.setAttribute("data-active", isSubmit ? "submit" : "admin");
+  submitCtaBtn.classList.toggle("active", isSubmit);
+  submitCtaBtn.setAttribute("aria-selected", isSubmit ? "true" : "false");
+  adminCtaBtn.classList.toggle("active", !isSubmit);
+  adminCtaBtn.setAttribute("aria-selected", !isSubmit ? "true" : "false");
+};
+
+const switchViewWithSlide = (targetMode) => {
+  syncCtaSlider(targetMode);
+  // Delay slightly so the fluid glass glider animation is visible and tactile
+  setTimeout(() => {
+    window.location.hash = targetMode === "admin" ? "#admin" : "#submit";
+  }, 220);
+};
+
+if (submitCtaBtn && adminCtaBtn && ctaTrack) {
+  submitCtaBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (ctaTrack.getAttribute("data-active") === "submit") {
+      window.location.hash = "#submit";
+    } else {
+      switchViewWithSlide("submit");
+    }
+  });
+
+  adminCtaBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (ctaTrack.getAttribute("data-active") === "admin") {
+      window.location.hash = "#admin";
+    } else {
+      switchViewWithSlide("admin");
+    }
+  });
+
+  // Hover motion: smoothly slide glider when hovering either button
+  submitCtaBtn.addEventListener("pointerenter", () => {
+    ctaTrack.setAttribute("data-hover", "submit");
+  });
+
+  adminCtaBtn.addEventListener("pointerenter", () => {
+    ctaTrack.setAttribute("data-hover", "admin");
+  });
+
+  ctaTrack.addEventListener("pointerleave", () => {
+    ctaTrack.removeAttribute("data-hover");
+  });
+
+  // Touch gesture support on mobile (swiping between options)
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  ctaTrack.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches[0]) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  ctaTrack.addEventListener("touchend", (e) => {
+    if (e.changedTouches && e.changedTouches[0]) {
+      const deltaX = e.changedTouches[0].clientX - touchStartX;
+      const deltaY = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(deltaX) > 28 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 0) {
+          switchViewWithSlide("admin");
+        } else {
+          switchViewWithSlide("submit");
+        }
+      }
+    }
+  }, { passive: true });
+}
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 document.querySelector("#backFromSubmit").addEventListener("click", (e) => {

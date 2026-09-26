@@ -183,4 +183,4 @@ npx -y serve .
 
 ## License
 
-Created for CSSO & ELITS — Cavite State University.
+Created for CSSO — Cavite State University.
