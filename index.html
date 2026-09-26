@@ -23,15 +23,37 @@
       <div class="blob blob-4"></div>
     </div>
 
-    <!-- ═══════════════ SUCCESS MODAL ═══════════════ -->
+    <!-- ═══════════════ SUCCESS MODAL (LANDSCAPE PREVIEW) ═══════════════ -->
     <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
-      <div class="modal-card glass-card">
-        <div class="modal-icon">✓</div>
-        <h2 id="modalTitle">Ticket Submitted!</h2>
-        <p class="modal-ticket-number" id="modalTicketNumber"></p>
-        <dl class="modal-summary" id="modalSummary"></dl>
-        <p class="form-note">Save your ticket number for follow‑up. The office will contact you via your CvSU email.</p>
-        <button type="button" id="modalCloseBtn" class="modal-close-btn">Done, close this</button>
+      <div class="modal-card glass-card modal-landscape">
+        <button type="button" class="modal-dismiss-btn" id="modalDismissBtn" aria-label="Close modal">&times;</button>
+        <div class="modal-landscape-grid">
+          <!-- Left Column: Confirmation & Actions -->
+          <div class="modal-col-left">
+            <div class="modal-icon" aria-hidden="true">✓</div>
+            <p class="modal-eyebrow">Submission Confirmed</p>
+            <h2 id="modalTitle">Ticket Submitted!</h2>
+            <div class="modal-ticket-box">
+              <span class="detail-label">Your Ticket Number</span>
+              <p class="modal-ticket-number" id="modalTicketNumber">LF-2026-00000</p>
+            </div>
+            <p class="modal-note-text">
+              Save your ticket number for follow‑up. CSSO officers will review your submission and contact you via your CvSU email.
+            </p>
+            <button type="button" id="modalCloseBtn" class="primary-button modal-close-btn">
+              Done, close preview
+            </button>
+          </div>
+
+          <!-- Right Column: Details & Item Description Preview -->
+          <div class="modal-col-right">
+            <div class="modal-preview-header">
+              <span class="detail-label">Submitted Ticket Preview</span>
+              <span class="modal-badge-open">Status: Open</span>
+            </div>
+            <dl class="modal-summary" id="modalSummary"></dl>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -137,8 +159,14 @@
 
           <div class="form-right">
             <label>
-              <span>What did you lose?</span>
-              <textarea name="item" rows="6" placeholder="Example: Black tumbler with sticker, blue umbrella, student ID..." required></textarea>
+              <span>Item Description (What did you lose?)</span>
+              <textarea
+                name="item"
+                id="itemDescriptionInput"
+                rows="6"
+                placeholder="Provide a detailed description (e.g., Black Hydroflask tumbler with anime sticker, dark blue foldable umbrella, Student ID with red lanyard)..."
+                required
+              ></textarea>
             </label>
             <button type="submit" id="submitBtn">Submit ticket</button>
             <p class="form-note">

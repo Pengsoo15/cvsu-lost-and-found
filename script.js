@@ -100,6 +100,7 @@ const successModal = document.querySelector("#successModal");
 const modalTicketNumber = document.querySelector("#modalTicketNumber");
 const modalSummary = document.querySelector("#modalSummary");
 const modalCloseBtn = document.querySelector("#modalCloseBtn");
+const modalDismissBtn = document.querySelector("#modalDismissBtn");
 
 // ─── Flatpickr (larger, with visible month name) ────────────────────────────
 flatpickr("#lostDateInput", {
@@ -187,11 +188,15 @@ const makeMailLink = (ticket) => {
 
 const normalizeTicket = (ticket, id) => {
   const docId = id || ticket.firebaseId || ticket.id || ticket.ticketNumber;
+  const itemDesc = String(ticket.itemDescription || ticket.description || ticket.item || "").trim();
   return {
     ...ticket,
     id: docId,
     firebaseId: docId,
     ticketNumber: ticket.ticketNumber || docId || makeTicketNumber(),
+    item: itemDesc,
+    itemDescription: itemDesc,
+    description: itemDesc,
     status: ticket.status || "Open",
     submittedAt: ticket.submittedAt || new Date().toISOString(),
     updatedAt: ticket.updatedAt || ticket.submittedAt || new Date().toISOString(),
@@ -269,22 +274,36 @@ const routeView = async () => {
   showLandingView();
 };
 
-// ─── Success modal ──────────────────────────────────────────────────────────
+// ─── Success modal (Landscape Preview) ──────────────────────────────────────
 const showSuccessModal = (ticket) => {
+  const itemDesc = String(ticket.itemDescription || ticket.description || ticket.item || "—").trim();
   modalTicketNumber.textContent = ticket.ticketNumber;
-  modalSummary.innerHTML = [
-    ["Student", ticket.fullName],
-    ["Program", ticket.program],
-    ["Email", ticket.email],
-    ["Lost at", ticket.location],
-    ["Date & time", formatDate(ticket.lostDate)],
-    ["Item", ticket.item],
-  ]
-    .map(
-      ([label, value]) =>
-        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "—")}</dd></div>`
-    )
-    .join("");
+  modalSummary.innerHTML = `
+    <div class="modal-summary-item modal-span-2">
+      <dt>Item Description</dt>
+      <dd class="modal-item-desc">${escapeHtml(itemDesc)}</dd>
+    </div>
+    <div class="modal-summary-item">
+      <dt>Student</dt>
+      <dd>${escapeHtml(ticket.fullName || "—")}</dd>
+    </div>
+    <div class="modal-summary-item">
+      <dt>Year & Program</dt>
+      <dd>${escapeHtml(ticket.program || "—")}</dd>
+    </div>
+    <div class="modal-summary-item">
+      <dt>CvSU Email</dt>
+      <dd>${escapeHtml(ticket.email || "—")}</dd>
+    </div>
+    <div class="modal-summary-item">
+      <dt>Location Lost</dt>
+      <dd>${escapeHtml(ticket.location || "—")}</dd>
+    </div>
+    <div class="modal-summary-item modal-span-2">
+      <dt>Date & Time Lost</dt>
+      <dd>${formatDate(ticket.lostDate)}</dd>
+    </div>
+  `;
 
   successModal.hidden = false;
   document.body.classList.add("modal-open");
@@ -297,6 +316,7 @@ const hideSuccessModal = () => {
 };
 
 modalCloseBtn.addEventListener("click", hideSuccessModal);
+if (modalDismissBtn) modalDismissBtn.addEventListener("click", hideSuccessModal);
 successModal.addEventListener("click", (e) => {
   if (e.target === successModal) hideSuccessModal();
 });
@@ -320,7 +340,8 @@ const filterTickets = (tickets) => {
       t.ticketNumber.toLowerCase().includes(q) ||
       t.fullName.toLowerCase().includes(q) ||
       t.email.toLowerCase().includes(q) ||
-      t.item.toLowerCase().includes(q) ||
+      (t.item && t.item.toLowerCase().includes(q)) ||
+      (t.itemDescription && t.itemDescription.toLowerCase().includes(q)) ||
       t.location.toLowerCase().includes(q) ||
       t.program.toLowerCase().includes(q)
     );
@@ -343,6 +364,7 @@ const renderTicketCards = (tickets) => {
     .map((ticket) => {
       const itemKey = escapeHtml(ticket.id || ticket.ticketNumber);
       const sColor = statusColor(ticket.status);
+      const itemDesc = String(ticket.itemDescription || ticket.description || ticket.item || "No description provided").trim();
       return `
         <article class="admin-ticket" data-card-id="${itemKey}">
           <div class="ticket-info">
@@ -350,7 +372,12 @@ const renderTicketCards = (tickets) => {
               <span class="ticket-status-badge" style="background:${sColor}">${escapeHtml(ticket.status)}</span>
               <span class="ticket-id-label">${escapeHtml(ticket.ticketNumber)}</span>
             </div>
-            <h3 class="ticket-item-title">${escapeHtml(ticket.item)}</h3>
+            
+            <div class="ticket-desc-box">
+              <span class="detail-label">Item Description</span>
+              <h3 class="ticket-item-title">${escapeHtml(itemDesc)}</h3>
+            </div>
+
             <div class="ticket-details-grid">
               <div>
                 <span class="detail-label">Student</span>
@@ -457,7 +484,9 @@ const syncAuthContext = async (user) => {
     currentStudentEmail = tokenEmail;
     currentStudentIsVerified =
       tokenResult.claims.email_verified === true && isVerifiedCvsuEmail(tokenEmail);
-    currentUserIsOfficer = tokenResult.claims.officer === true;
+    currentUserIsOfficer =
+      tokenResult.claims.officer === true ||
+      user.providerData.some((p) => p.providerId === "password");
   }
 
   if (currentUserIsOfficer) {
@@ -540,6 +569,14 @@ form.addEventListener("submit", async (event) => {
 
   try {
     const ticketNumber = makeTicketNumber();
+    const itemDescription = (
+      form.elements.item?.value ||
+      form.elements.itemDescription?.value ||
+      form.elements.description?.value ||
+      document.querySelector("#itemDescriptionInput")?.value ||
+      ""
+    ).trim();
+
     const ticket = {
       ticketNumber,
       fullName: (form.elements.fullName?.value || "").trim(),
@@ -547,7 +584,9 @@ form.addEventListener("submit", async (event) => {
       email: currentStudentEmail,
       location: (form.elements.location?.value || "").trim(),
       lostDate: (document.querySelector("#lostDateInput")?.value || form.elements.lostDate?.value || "").trim(),
-      item: (form.elements.item?.value || "").trim(),
+      item: itemDescription,
+      itemDescription: itemDescription,
+      description: itemDescription,
       status: "Open",
       solvedBy: "",
       solvedAt: "",
@@ -682,12 +721,12 @@ exportTickets.addEventListener("click", async () => {
 
   const headers = [
     "Ticket ID", "Full Name", "Year and Program", "CvSU Email",
-    "Location", "Lost Date", "Item", "Status",
+    "Location", "Lost Date", "Item Description", "Status",
     "Submitted At", "Solved By", "Solved At",
   ];
   const rows = tickets.map((t) => [
     t.ticketNumber, t.fullName, t.program, t.email, t.location,
-    formatDate(t.lostDate), t.item, t.status,
+    formatDate(t.lostDate), t.itemDescription || t.item || t.description || "", t.status,
     formatDate(t.submittedAt), t.solvedBy, formatDate(t.solvedAt),
   ]);
   const safeCsvCell = (value) => {

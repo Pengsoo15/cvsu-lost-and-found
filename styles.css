@@ -279,56 +279,223 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .form-note { margin-bottom: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 
-/* ─── Success Modal ───────────────────────────────────────────────────────── */
+/* ─── Success Modal (Landscape Preview) ──────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 1000;
   display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-  background: rgba(10, 30, 20, 0.55);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  animation: fadeIn 200ms ease;
+  padding: clamp(12px, 3vw, 24px);
+  background: rgba(10, 30, 20, 0.65);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: fadeIn 180ms ease;
+  will-change: opacity;
 }
 .modal-overlay[hidden] { display: none; }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.modal-card {
-  width: min(520px, 100%); max-height: 90dvh;
+.modal-card.modal-landscape {
+  position: relative;
+  width: min(860px, 95vw);
+  max-height: 90dvh;
+  padding: clamp(20px, 3vw, 32px);
+  border-radius: 26px;
+  text-align: left;
+  animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 24px 60px rgba(10, 35, 20, 0.35);
   overflow-y: auto;
-  padding: clamp(24px, 5vw, 44px);
-  border-radius: 28px; text-align: center;
-  animation: slideUp 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Completely remove scroll bar while keeping smooth scrolling */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+.modal-card.modal-landscape::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(28px) scale(0.96); }
-  to   { opacity: 1; transform: none; }
+.modal-dismiss-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 150ms ease, transform 150ms ease;
+  z-index: 10;
+}
+.modal-dismiss-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  transform: scale(1.05);
 }
 
-.modal-icon {
-  width: 72px; height: 72px; margin: 0 auto 20px;
-  display: flex; align-items: center; justify-content: center;
+.modal-landscape-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 26px;
+  align-items: stretch;
+}
+
+.modal-col-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 22px;
+  border-right: 1px solid rgba(16, 32, 24, 0.1);
+}
+
+.modal-col-left .modal-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--green), var(--green-dark));
-  color: #fff; font-size: 2rem; font-weight: 800;
-  box-shadow: 0 12px 28px rgba(20,107,72,0.35);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(20, 107, 72, 0.28);
 }
 
-.modal-card h2 { font-size: 1.6rem; margin-bottom: 6px; }
+.modal-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--green-dark);
+  margin: 0 0 4px;
+}
+
+.modal-col-left h2 {
+  font-size: 1.45rem;
+  margin: 0 0 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.modal-ticket-box {
+  background: linear-gradient(135deg, rgba(20, 107, 72, 0.08), rgba(20, 107, 72, 0.03));
+  border: 1px solid rgba(20, 107, 72, 0.18);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.modal-ticket-box .detail-label {
+  font-size: 0.68rem;
+  margin-bottom: 2px;
+}
 
 .modal-ticket-number {
-  display: inline-block; padding: 8px 18px; border-radius: 999px;
-  background: linear-gradient(135deg, rgba(20,107,72,0.12), rgba(20,107,72,0.06));
-  color: var(--green-dark); font-weight: 800; font-size: 1.1rem;
-  letter-spacing: 0.04em; margin-bottom: 20px;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  font-family: monospace, "Inter", sans-serif;
+  letter-spacing: 0.04em;
 }
 
-.modal-summary { display: grid; gap: 10px; margin: 0 0 20px; text-align: left; }
-.modal-summary div { padding-bottom: 10px; border-bottom: 1px solid rgba(16,32,24,0.08); }
-.modal-summary dt { color: var(--muted); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.modal-summary dd { margin: 4px 0 0; font-weight: 700; overflow-wrap: anywhere; line-height: 1.4; }
+.modal-note-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0 0 18px;
+}
 
-.modal-close-btn { width: 100%; margin-top: 8px; }
+.modal-close-btn {
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-radius: 14px;
+  margin-top: auto;
+  cursor: pointer;
+}
+
+/* Modal Right Column */
+.modal-col-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(16, 32, 24, 0.08);
+}
+
+.modal-badge-open {
+  background: rgba(230, 126, 34, 0.15);
+  color: #d35400;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 12px;
+  margin: 0;
+}
+
+.modal-summary-item {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 8px 12px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-summary-item.modal-span-2 {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(20, 107, 72, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.modal-summary dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.modal-summary dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.modal-item-desc {
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+  color: var(--ink);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ─── Admin Dashboard ─────────────────────────────────────────────────────── */
@@ -462,11 +629,26 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   letter-spacing: 0.02em;
 }
 
+.ticket-desc-box {
+  background: rgba(20, 107, 72, 0.05);
+  border: 1px solid rgba(20, 107, 72, 0.14);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.ticket-desc-box .detail-label {
+  color: var(--green-dark);
+  margin-bottom: 4px;
+}
+
 .ticket-item-title {
   margin: 0;
-  font-size: 1.08rem;
-  font-weight: 800;
-  line-height: 1.3;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .ticket-details-grid {
@@ -796,6 +978,42 @@ input.flatpickr-input,
   .ticket-form, .admin-card { padding: 18px; }
   .landscape-form { gap: 18px; }
   .modal-card { border-radius: 20px; }
+  .modal-card.modal-landscape {
+    width: 95vw;
+    max-height: 88dvh;
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+  .modal-landscape-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .modal-col-left {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(16, 32, 24, 0.1);
+    padding-bottom: 16px;
+  }
+  .modal-col-left .modal-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+  .modal-col-left h2 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+  }
+  .modal-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .modal-summary-item.modal-span-2 {
+    grid-column: auto;
+  }
+  .modal-note-text {
+    margin-bottom: 12px;
+  }
 
   .auth-buttons { flex-direction: column; }
   .auth-buttons .secondary-button { width: 100%; }
