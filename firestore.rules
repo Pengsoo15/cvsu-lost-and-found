@@ -3,13 +3,92 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /lostTickets/{ticketId} {
-      // Students can submit a lost item report if it includes a valid CvSU email
-      allow create: if request.resource.data.email.matches('.*@cvsu[.]edu[.]ph$')
-                    && request.resource.data.fullName is string
-                    && request.resource.data.item is string;
 
-      // Only authenticated CSSO/ELITS officers can view, update, or delete tickets
-      allow read, update, delete: if request.auth != null;
+      // ── Auth helpers ────────────────────────────────────────────────────
+      function isVerifiedCvsuStudent() {
+        return request.auth != null
+          && request.auth.token.email_verified == true
+          && request.auth.token.email.matches('^[A-Za-z0-9._%+-]+@cvsu[.]edu[.]ph$');
+      }
+
+      function isOfficer() {
+        // Grant { officer: true } only to approved CSSO/ELITS accounts via
+        // Firebase Admin SDK: admin.auth().setCustomUserClaims(uid, { officer: true })
+        return request.auth != null && request.auth.token.officer == true;
+      }
+
+      // ── Field-shape validation ───────────────────────────────────────────
+      function hasValidTicketFields() {
+        let d = request.resource.data;
+        return d.keys().hasOnly([
+            'ticketNumber', 'fullName', 'program', 'email', 'location', 'lostDate',
+            'item', 'status', 'solvedBy', 'solvedAt', 'submittedAt', 'updatedAt'
+          ])
+          && d.keys().hasAll([
+            'ticketNumber', 'fullName', 'program', 'email', 'location', 'lostDate',
+            'item', 'status', 'solvedBy', 'solvedAt', 'submittedAt', 'updatedAt'
+          ])
+          && d.ticketNumber is string  && d.ticketNumber.size() <= 24
+          && d.fullName    is string   && d.fullName.size()    > 0 && d.fullName.size()    <= 120
+          && d.program     is string   && d.program.size()     > 0 && d.program.size()     <= 120
+          && d.email       is string
+          && d.location    is string   && d.location.size()    > 0 && d.location.size()    <= 200
+          && d.lostDate    is string   && d.lostDate.size()    > 0 && d.lostDate.size()    <= 64
+          && d.item        is string   && d.item.size()        > 0 && d.item.size()        <= 2000;
+      }
+
+      function hasValidNewTicketState() {
+        let d = request.resource.data;
+        return d.status       == 'Open'
+          &&   d.solvedBy     == ''
+          &&   d.solvedAt     == ''
+          &&   d.submittedAt  == request.time
+          &&   d.updatedAt    == request.time;
+      }
+
+      // ── Server-side rate limit (max 3 tickets per user in the last hour) ─
+      // Counts documents whose submittedAt is within the last 3600 seconds.
+      // Free tier: this only runs on create, not on reads, so cost is minimal.
+      function withinRateLimit() {
+        let cutoff = request.time - duration.value(1, 'h');
+        return firestore.collection('lostTickets')
+                 .where('email', '==', request.auth.token.email)
+                 .where('submittedAt', '>', cutoff)
+                 .count() < 3;
+      }
+
+      // ── Update validation ────────────────────────────────────────────────
+      function hasValidOfficerUpdate() {
+        let d = request.resource.data;
+        return d.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'solvedBy', 'solvedAt', 'updatedAt'
+          ])
+          && d.status in ['Open', 'Reviewing', 'Matched', 'Solved']
+          && d.solvedBy is string && d.solvedBy.size() <= 120
+          && d.updatedAt == request.time
+          && (
+            (d.status == 'Solved'
+              && d.solvedBy.size() > 0
+              && d.solvedAt == request.time)
+            || (d.status != 'Solved'
+              && d.solvedBy == ''
+              && d.solvedAt == '')
+          );
+      }
+
+      // ── Access rules ─────────────────────────────────────────────────────
+      // Only a verified CvSU student may create a ticket for their own email,
+      // the fields must be valid, and they must not exceed 3 tickets per hour.
+      allow create: if isVerifiedCvsuStudent()
+                    && request.resource.data.email == request.auth.token.email
+                    && hasValidTicketFields()
+                    && hasValidNewTicketState()
+                    && withinRateLimit();
+
+      // Student PII is visible only to designated officers.
+      allow read:   if isOfficer();
+      allow update: if isOfficer() && hasValidOfficerUpdate();
+      allow delete: if isOfficer();
     }
   }
 }

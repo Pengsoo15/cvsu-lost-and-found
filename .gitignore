@@ -8,6 +8,12 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 
+# Never commit Firebase Admin SDK credentials or environment secrets.
+serviceAccountKey.json
+*.pem
+.env
+.env.*
+
 # OS and Editor files
 .DS_Store
 Thumbs.db

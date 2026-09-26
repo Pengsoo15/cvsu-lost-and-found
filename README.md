@@ -87,6 +87,19 @@ firebase login
 firebase deploy
 ```
 
+## Required Security Setup
+
+Before deploying the security changes, complete the TODO markers in `script.js` and `firestore.rules`:
+
+1. In Firebase Authentication, enable the Google provider for student sign-in and add the production Firebase Hosting domain to Authorized domains.
+2. Create a reCAPTCHA Enterprise site key for the production domain, replace `REPLACE_WITH_RECAPTCHA_ENTERPRISE_SITE_KEY` in `script.js`, then enable Firestore App Check enforcement after first checking monitor-mode traffic.
+3. Give each approved CSSO/ELITS officer the Firebase custom claim `{ officer: true }` using the Firebase Admin SDK. Do not add a service-account key to this repository.
+4. Deploy the rules and hosting configuration only after steps 1-3 are complete:
+
+```bash
+firebase deploy --only firestore:rules,hosting
+```
+
 ---
 
 ## License

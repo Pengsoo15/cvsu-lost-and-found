@@ -3,14 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CvSU Lost and Found</title>
+    <title>CvSU Lost and Found – CSSO &amp; ELITS</title>
+    <meta name="description" content="Submit a lost item report to the CvSU CSSO &amp; ELITS Lost and Found Ticket Desk." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -21,16 +22,34 @@
       <div class="blob blob-3"></div>
       <div class="blob blob-4"></div>
     </div>
+
+    <!-- ═══════════════ SUCCESS MODAL ═══════════════ -->
+    <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+      <div class="modal-card glass-card">
+        <div class="modal-icon">✓</div>
+        <h2 id="modalTitle">Ticket Submitted!</h2>
+        <p class="modal-ticket-number" id="modalTicketNumber"></p>
+        <dl class="modal-summary" id="modalSummary"></dl>
+        <p class="form-note">Save your ticket number for follow‑up. The office will contact you via your CvSU email.</p>
+        <button type="button" id="modalCloseBtn" class="modal-close-btn">Done, close this</button>
+      </div>
+    </div>
+
     <main class="page-shell">
+
+      <!-- ═══════════════ LANDING ═══════════════ -->
       <section class="hero-panel" id="landingPanel" aria-labelledby="page-title">
         <div class="hero-copy">
-          <p class="eyebrow">CSSO & ELITS</p>
+          <p class="eyebrow">CSSO &amp; ELITS</p>
           <h1 id="page-title">Lost and Found Ticket Desk</h1>
           <p class="intro">
             Submit a detailed report so both organizations can match your
             item with turned-in belongings faster.
           </p>
-          <a href="#submit" class="primary-button" style="display: inline-block; margin-top: 24px; text-decoration: none; text-align: center; line-height: 56px; padding: 0 32px; min-height: 56px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, var(--green), var(--green-dark)); font-weight: 800; box-shadow: 0 18px 34px rgba(20, 107, 72, 0.28); transition: transform 160ms ease, box-shadow 160ms ease;">Report Lost Item</a>
+          <div class="landing-cta-row">
+            <a href="#submit" class="primary-button cta-btn" id="goToSubmit">Report Lost Item</a>
+            <a href="#admin" class="secondary-link cta-btn" id="goToAdmin">Officer Login</a>
+          </div>
         </div>
 
         <div class="hero-stack">
@@ -57,12 +76,33 @@
         </div>
       </section>
 
+      <!-- ═══════════════ SUBMIT ═══════════════ -->
       <section class="tab-panel" id="submitPanel" hidden>
-        <div class="content-grid">
-          <form class="glass-card ticket-form" id="lostItemForm">
+        <!-- Back nav -->
+        <div class="panel-nav">
+          <a href="#" class="back-link" id="backFromSubmit">← Back to home</a>
+        </div>
+
+        <form class="glass-card ticket-form landscape-form" id="lostItemForm" novalidate>
+          <!-- LEFT column -->
+          <div class="form-left">
             <div class="section-heading">
               <p class="eyebrow">Student details</p>
               <h2>Submit a Lost Item Ticket</h2>
+            </div>
+
+            <div class="auth-row" id="authRow">
+              <div class="form-note" id="studentAuthMessage" aria-live="polite">
+                Sign in with your verified CvSU Google account before submitting a ticket.
+              </div>
+              <div class="auth-buttons">
+                <button class="secondary-button" type="button" id="studentSignIn">
+                  Sign in with CvSU Google
+                </button>
+                <button class="secondary-button" type="button" id="studentSignOut" hidden>
+                  Sign out
+                </button>
+              </div>
             </div>
 
             <div class="field-grid">
@@ -95,8 +135,9 @@
                 name="email"
                 placeholder="student@cvsu.edu.ph"
                 autocomplete="email"
-                pattern="^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$"
+                pattern="^[A-Za-z0-9._%+\-]+@cvsu\.edu\.ph$"
                 title="Please use your official CvSU email ending in @cvsu.edu.ph"
+                readonly
                 required
               />
             </label>
@@ -114,71 +155,46 @@
 
               <label>
                 <span>When did you lose it?</span>
-                <input type="datetime-local" name="lostDate" required />
+                <input
+                  type="text"
+                  name="lostDate"
+                  id="lostDateInput"
+                  placeholder="Select date and time..."
+                  readonly
+                  required
+                />
               </label>
             </div>
+          </div>
 
+          <!-- RIGHT column -->
+          <div class="form-right">
             <label>
               <span>What did you lose?</span>
               <textarea
                 name="item"
-                rows="5"
+                rows="6"
                 placeholder="Example: Black tumbler with sticker, blue umbrella, student ID..."
                 required
               ></textarea>
             </label>
 
-            <button type="submit">Submit ticket</button>
+            <button type="submit" id="submitBtn">Submit ticket</button>
             <p class="form-note">
-              Please use your CvSU email so the office can contact you for updates.
+              Only verified <strong>@cvsu.edu.ph</strong> Google accounts may submit tickets.
+              Max 3 submissions per hour.
             </p>
-          </form>
-
-          <aside class="glass-card preview-card" aria-live="polite">
-            <div class="section-heading">
-              <p class="eyebrow">Ticket preview</p>
-              <h2 id="ticketId">Not submitted yet</h2>
-            </div>
-
-            <dl class="ticket-summary">
-              <div>
-                <dt>Student</dt>
-                <dd id="previewName">Waiting for details</dd>
-              </div>
-              <div>
-                <dt>Program</dt>
-                <dd id="previewProgram">-</dd>
-              </div>
-              <div>
-                <dt>Email</dt>
-                <dd id="previewEmail">-</dd>
-              </div>
-              <div>
-                <dt>Lost at</dt>
-                <dd id="previewLocation">-</dd>
-              </div>
-              <div>
-                <dt>Date and time</dt>
-                <dd id="previewDate">-</dd>
-              </div>
-              <div>
-                <dt>Item</dt>
-                <dd id="previewItem">-</dd>
-              </div>
-            </dl>
-
-            <div class="success-panel" id="successPanel" hidden>
-              <strong>Ticket submitted</strong>
-              <p>
-                Your report has been recorded on this page. Save your ticket
-                number for follow-up.
-              </p>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </form>
       </section>
 
+      <!-- ═══════════════ ADMIN ═══════════════ -->
       <section class="tab-panel hidden-admin-panel" id="adminPanel" hidden>
+        <!-- Back nav -->
+        <div class="panel-nav">
+          <a href="#" class="back-link" id="backFromAdmin">← Back to home</a>
+        </div>
+
         <form class="glass-card admin-card admin-login" id="adminLoginForm">
           <div class="section-heading">
             <p class="eyebrow">Authorized access</p>
@@ -222,7 +238,7 @@
               <p class="eyebrow">Admin dashboard</p>
               <h2>Submitted Tickets</h2>
               <p class="admin-subtitle" id="dataSourceLabel">
-                Live data: Firebase
+                Live data: Firebase Firestore
               </p>
             </div>
             <div class="admin-header-actions">
