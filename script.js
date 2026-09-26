@@ -364,7 +364,9 @@ const renderTicketCards = (tickets) => {
     .map((ticket) => {
       const itemKey = escapeHtml(ticket.id || ticket.ticketNumber);
       const sColor = statusColor(ticket.status);
-      const itemDesc = String(ticket.itemDescription || ticket.description || ticket.item || "No description provided").trim();
+      const rawItem = String(ticket.itemDescription || ticket.description || ticket.item || "").trim();
+      const hasItem = Boolean(rawItem && rawItem.length > 0);
+      const itemDesc = hasItem ? rawItem : "⚠️ No description provided by student (use field below to add details)";
       return `
         <article class="admin-ticket" data-card-id="${itemKey}">
           <div class="ticket-info">
@@ -373,9 +375,12 @@ const renderTicketCards = (tickets) => {
               <span class="ticket-id-label">${escapeHtml(ticket.ticketNumber)}</span>
             </div>
             
-            <div class="ticket-desc-box">
-              <span class="detail-label">Item Description</span>
-              <h3 class="ticket-item-title">${escapeHtml(itemDesc)}</h3>
+            <div class="ticket-desc-box ${!hasItem ? 'is-missing' : ''}">
+              <div class="desc-header">
+                <span class="detail-label">Item Description (for matching)</span>
+                ${!hasItem ? '<span class="text-muted-notice">⚠️ Missing Details</span>' : ''}
+              </div>
+              <h3 class="ticket-item-title ${!hasItem ? 'text-muted-notice' : ''}">${escapeHtml(itemDesc)}</h3>
             </div>
 
             <div class="ticket-details-grid">
@@ -415,6 +420,15 @@ const renderTicketCards = (tickets) => {
                 <option ${ticket.status === "Matched" ? "selected" : ""}>Matched</option>
                 <option ${ticket.status === "Solved" ? "selected" : ""}>Solved</option>
               </select>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Item description</label>
+              <textarea
+                class="ticket-desc-edit"
+                data-ticket-desc="${itemKey}"
+                rows="2"
+                placeholder="Item description / details..."
+              >${escapeHtml(rawItem)}</textarea>
             </div>
             <div class="control-group">
               <label class="control-label">Solved by</label>
@@ -564,11 +578,11 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Submitting ticket…";
-
   try {
-    const ticketNumber = makeTicketNumber();
+    const fullName = (form.elements.fullName?.value || "").trim();
+    const program = (form.elements.program?.value || "").trim();
+    const location = (form.elements.location?.value || "").trim();
+    const lostDate = (document.querySelector("#lostDateInput")?.value || form.elements.lostDate?.value || "").trim();
     const itemDescription = (
       form.elements.item?.value ||
       form.elements.itemDescription?.value ||
@@ -577,13 +591,22 @@ form.addEventListener("submit", async (event) => {
       ""
     ).trim();
 
+    if (!fullName || !program || !location || !lostDate || !itemDescription) {
+      alert("Please fill in all fields: Full Name, Program, Location, Date & Time, and What you lost (Item Description).");
+      submitBtn.disabled = !currentStudentIsVerified;
+      submitBtn.textContent = "Submit ticket";
+      return;
+    }
+
+    const ticketNumber = makeTicketNumber();
+
     const ticket = {
       ticketNumber,
-      fullName: (form.elements.fullName?.value || "").trim(),
-      program: (form.elements.program?.value || "").trim(),
+      fullName,
+      program,
       email: currentStudentEmail,
-      location: (form.elements.location?.value || "").trim(),
-      lostDate: (document.querySelector("#lostDateInput")?.value || form.elements.lostDate?.value || "").trim(),
+      location,
+      lostDate,
       item: itemDescription,
       itemDescription: itemDescription,
       description: itemDescription,
@@ -672,18 +695,31 @@ ticketList.addEventListener("click", async (event) => {
   if (ticketIdToSave) {
     const statusInput = ticketList.querySelector(`[data-ticket-status="${CSS.escape(ticketIdToSave)}"]`);
     const solvedByInput = ticketList.querySelector(`[data-ticket-solved-by="${CSS.escape(ticketIdToSave)}"]`);
-    const status = statusInput.value;
+    const descInput = ticketList.querySelector(`[data-ticket-desc="${CSS.escape(ticketIdToSave)}"]`);
+
+    const status = statusInput ? statusInput.value : "Open";
     const solvedBy = status === "Solved"
-      ? solvedByInput.value.trim() || getAdminName()
-      : solvedByInput.value.trim();
+      ? (solvedByInput?.value.trim() || getAdminName())
+      : (solvedByInput?.value.trim() || "");
+
+    const updates = {
+      status,
+      solvedBy: status === "Solved" ? solvedBy : "",
+    };
+
+    if (descInput) {
+      const newDesc = descInput.value.trim();
+      if (newDesc) {
+        updates.item = newDesc;
+        updates.itemDescription = newDesc;
+        updates.description = newDesc;
+      }
+    }
 
     event.target.disabled = true;
     event.target.textContent = "Saving…";
     try {
-      await ticketStore.updateTicket(ticketIdToSave, {
-        status,
-        solvedBy: status === "Solved" ? solvedBy : "",
-      });
+      await ticketStore.updateTicket(ticketIdToSave, updates);
       await renderTickets();
     } catch (err) {
       alert("Failed to update ticket: " + err.message);
